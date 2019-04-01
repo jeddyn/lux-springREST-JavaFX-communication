@@ -22,13 +22,15 @@ import pl.model.CourseModel;
 import pl.model.ReviewModel;
 import service.JSonService;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 
 
 public class MainFX extends Application {
     private TableView<CourseModel> tableOfCourses;
     private TableView<ReviewModel> tableOfReviews;
 
-    private ObservableList<CourseModel> dataOfCourses;
+    private ObservableList<CourseModel> dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
 
     private Text actionStatus;
     //input to add Title
@@ -36,23 +38,26 @@ public class MainFX extends Application {
     //input to add Review
     private TextField inputReview = new TextField();
 
+    private TextField searchField = new TextField();
+
     private Number actuallySelectedItemsInColumnOfReviews = 0;
-    private String getActuallyEditedColumn = "";
 
 
+    public MainFX() throws IOException {
+    }
 
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Projekt");
 
-        // Books label
+
         Label topLabel = new Label("Kursy");
         topLabel.setTextFill(Color.DARKBLUE);
         topLabel.setFont(Font.font("Calibri", FontWeight.BOLD, 36));
         HBox labelHb = new HBox();
         labelHb.setAlignment(Pos.CENTER);
-        labelHb.getChildren().add(topLabel);
+        labelHb.getChildren().addAll(searchField,topLabel);
 
 
         // tworzenie nowego widoku, pobieranie danych z bazy, wrzucanie danych do tabelki, edit true
@@ -73,14 +78,14 @@ public class MainFX extends Application {
 
                 ((CourseModel) t.getTableView().getItems().get(
                         t.getTablePosition().getRow())
-                ).setTitle(getActuallyEditedColumn = t.getNewValue());
+                ).setTitle(t.getNewValue());
             }
 
         });
 
         tableOfReviews = new TableView<>();
 
-        tableOfReviews.setEditable(true);
+        //tableOfReviews.setEditable(true);
 
         TableColumn reviewColum = new TableColumn("Opinie");
         reviewColum.setCellValueFactory(new PropertyValueFactory<ReviewModel, String>("comment"));
@@ -95,7 +100,6 @@ public class MainFX extends Application {
             }
         });
 
-        //tableOfCourses.getColumns().setAll(titleCol, authorCol);
         tableOfReviews.getColumns().setAll(reviewColum);
         tableOfReviews.setPrefWidth(450);
         tableOfReviews.setPrefHeight(300);
@@ -112,8 +116,10 @@ public class MainFX extends Application {
 
 
         // Add and delete buttons
-        Text titleLabel = new Text("Tytuł:");
-        Text reviewLabel = new Text("Ocena");
+        Text titleTxfield = new Text("Tytuł:");
+        Text reviewTxfield = new Text("Ocena");
+        Text searchTxfield = new Text("Szukaj: ");
+
 
         Button addbtn = new Button("Dodaj");
         addbtn.setOnAction(new AddButtonListener());
@@ -121,7 +127,7 @@ public class MainFX extends Application {
         delbtn.setOnAction(new DeleteButtonListener());
         HBox buttonHb = new HBox(10);
         buttonHb.setAlignment(Pos.CENTER);
-        buttonHb.getChildren().addAll(titleLabel, this.inputTitle, reviewLabel, this.inputReview, addbtn, delbtn);
+        buttonHb.getChildren().addAll(titleTxfield, this.inputTitle, reviewTxfield, this.inputReview, addbtn, delbtn);
 
         // Status message text
         actionStatus = new Text();
@@ -129,20 +135,27 @@ public class MainFX extends Application {
 
         // Vbox
         VBox vbox = new VBox(20);
-        vbox.setPadding(new Insets(25, 25, 25, 25));;
-        vbox.getChildren().addAll(labelHb, tableOfCourses, buttonHb, actionStatus, tableOfReviews);
+        vbox.setPadding(new Insets(25, 25, 25, 25));
+        vbox.getChildren().addAll(searchTxfield,searchField,labelHb, tableOfCourses, buttonHb, actionStatus, tableOfReviews);
 
         // Scene
-        Scene scene = new Scene(vbox, 800, 600); // w x h
+        Scene scene = new Scene(vbox, 1280, 800); // w x h
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // Select the first row
+        // Select the first row onCreate
         tableOfReviews.getSelectionModel().select(0);
 
         tableOfCourses.getSelectionModel().select(0);
         CourseModel courseModel = tableOfCourses.getSelectionModel().getSelectedItem();
         actionStatus.setText(courseModel.toString());
+
+
+        searchField.textProperty().addListener(
+                (observable, oldValue, newValue) -> {
+                    System.out.println(newValue);
+                }
+        );
 
     }
 
@@ -151,10 +164,8 @@ public class MainFX extends Application {
         @Override
         public void changed(ObservableValue<? extends Number> ov,
                             Number oldVal, Number newVal) {
-            System.out.println("Aktaulnie zaznaczony: "+ov.getValue());
-            actuallySelectedItemsInColumnOfReviews = newVal;
-            System.out.println(dataOfCourses.get((int)actuallySelectedItemsInColumnOfReviews).getReview());
-            tableOfReviews.setItems(FXCollections.observableArrayList(dataOfCourses.get((int)actuallySelectedItemsInColumnOfReviews).getReview()));
+            actuallySelectedItemsInColumnOfReviews = ov.getValue();
+
 
             int ix = newVal.intValue();
 
@@ -162,84 +173,118 @@ public class MainFX extends Application {
 
                 return; // invalid dataOfCourses
             }
-
+            //print reviews from selected item
+            tableOfReviews.setItems(FXCollections.observableArrayList(dataOfCourses.get((int)actuallySelectedItemsInColumnOfReviews).getReview()));
             CourseModel courseModel = dataOfCourses.get(ix);
             actionStatus.setText(courseModel.toString());
         }
     }
 
-
     private class AddButtonListener implements EventHandler<ActionEvent> {
 
         @Override
         public void handle(ActionEvent e) {
-            System.out.println("Pobrałem aktualnie edytowany wiersz! : " + getActuallyEditedColumn);
+            HttpURLConnection conn;
+            try {
+                conn = JSonService
+                                .httpConnectToREST("http://localhost:5050/test/course",
+                                                "POST",
+                                              "Authorization");
 
+                boolean isContainActuallyAddedCourse = false;
 
-            boolean isContainActuallyAddedCourse = false;
+                //create new user and set args
+                CourseModel courseModel = new CourseModel();
+                courseModel.setTitle(inputTitle.getText());
+                courseModel.setComment(inputReview.getText());
 
+                //if in database we have this course update reviews
+                for(int i =0; i<dataOfCourses.size(); i++){
+                    if(dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())){
+                        dataOfCourses.get(i).setComment(inputReview.getText());
+                        isContainActuallyAddedCourse = true;
+                    }
+                }
 
-            // Create a new row after last row
-            CourseModel courseModel = new CourseModel();
-            courseModel.setTitle(inputTitle.getText());
-            courseModel.setComment(inputReview.getText());
-
-
-            for(int i =0; i<dataOfCourses.size(); i++){
-                if(dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())){
-
-                    dataOfCourses.get(i).setComment(inputReview.getText());
-                    System.out.println("Udało się porównać!");
-                    isContainActuallyAddedCourse = true;
-
+                //if we dont have this user
+                if(isContainActuallyAddedCourse == false) {
+                        //add courseModel to database by REST URL
+                        //JSonService.postGetDeleteHttpREST(null,"http://localhost:5050/test/course","POST",courseModel);
+                        JSonService.addParsedJsonObject(courseModel,conn);
+                        //delete all data (to update id's)
+                        dataOfCourses = null;
+                        //set data from REST server
+                        dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+                        tableOfCourses.setItems(dataOfCourses);
 
                 }
-                System.out.println(dataOfCourses.get(i).getTitle()+ ":" + inputTitle.getText());
+
+                // Select the new row
+                int row = dataOfCourses.size()-1;
+                tableOfCourses.requestFocus();
+                tableOfCourses.getSelectionModel().select(row);
+                tableOfCourses.getFocusModel().focus(row);
                 tableOfCourses.refresh();
+                actionStatus.setText("Nowy kurs: Dodaj tytuł kursu i opinie. Zatwierdź przyciskiem <Dodaj>.");
+
+            }catch (IOException e1) {
+                e1.printStackTrace();
             }
-
-
-            if(isContainActuallyAddedCourse == false) {
-                dataOfCourses.add(courseModel);
+            dataOfCourses = null;
+            try {//check its could be single get from REST
+                dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
-            int row = dataOfCourses.size() - 1;
-
-            // Select the new row
-            tableOfCourses.requestFocus();
-            tableOfCourses.getSelectionModel().select(row);
-            tableOfCourses.getFocusModel().focus(row);
-
-            actionStatus.setText("Nowy kurs: Dodaj tytuł kursu i opinie. Zatwierdź <Enter>.");
         }
+
     }
 
     private class DeleteButtonListener implements EventHandler<ActionEvent> {
 
         @Override
         public void handle(ActionEvent e) {
-
-            // Get selected row and delete
             int ix = tableOfCourses.getSelectionModel().getSelectedIndex();
             CourseModel courseModel = (CourseModel) tableOfCourses.getSelectionModel().getSelectedItem();
-            dataOfCourses.remove(ix);
-            actionStatus.setText("Usunięto: " + courseModel.toString());
+            System.out.println("Pobrano z tabelki użytkownika: " + courseModel.toString());
 
-            // Select a row
+            // Get selected row and delete
+            if (tableOfCourses.getSelectionModel().getSelectedItem() != null) {
 
-            if (tableOfCourses.getItems().size() == 0) {
+                try {
+                    JSonService.postGetDeleteHttpREST(
+                            courseModel.getId(),
+                            "http://localhost:5050/test/course",
+                            "DELETE",
+                            null);
 
-                actionStatus.setText("Brak danych w tabeli!");
-                return;
+                    //JSonService.delete(courseModel.getId());
+                    dataOfCourses.remove(ix);
+
+                    dataOfCourses.addAll(JSonService.getListOfModels());
+                    tableOfCourses.setItems(FXCollections.observableArrayList(FXCollections.observableArrayList(JSonService.getListOfModels())));
+                    tableOfCourses.refresh();
+                    tableOfCourses.getColumns().get(0).setVisible(false);
+                    tableOfCourses.getColumns().get(0).setVisible(true);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+
+                // Select a row
+                if (tableOfCourses.getItems().size() == 0) {
+                    actionStatus.setText("Brak danych w tabeli!");
+                    return;
+                }
+
+                if (ix != 0) {
+
+                    ix = ix-1;
+                }
+
+                tableOfCourses.requestFocus();
+                tableOfCourses.getSelectionModel().select(ix);
+                tableOfCourses.getFocusModel().focus(ix);
             }
-
-            if (ix != 0) {
-
-                ix = ix -1;
-            }
-
-            tableOfCourses.requestFocus();
-            tableOfCourses.getSelectionModel().select(ix);
-            tableOfCourses.getFocusModel().focus(ix);
         }
     }
 }

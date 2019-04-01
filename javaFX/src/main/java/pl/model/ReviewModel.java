@@ -13,7 +13,7 @@ public class ReviewModel {
 
 
     @JsonProperty("id")
-    @JsonIgnoreProperties
+    //@JsonIgnoreProperties
     private Long id;
 
     @JsonProperty("comment")

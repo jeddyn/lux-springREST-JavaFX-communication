@@ -31,51 +31,56 @@ public class CourseController {
     }
 
     @PostMapping("/course")
-    public ResponseEntity addCourse(@RequestBody Course courseDTO) {
+    public ResponseEntity addCourse(@RequestBody Course course) {
 
-        Course course = courseRepository.save(courseDTO);
-
-        return new ResponseEntity<>(course, HttpStatus.OK);
+        courseRepository.save(course);
+        return new ResponseEntity(HttpStatus.OK);
     }
     @GetMapping("/addAllCoursesWithReviews")
     public ResponseEntity addAllReviews() {
         List<Review> lista = new ArrayList<>();
         Review review = new Review();
-        review.setComment("Dopuszczający");
+        review.setComment("Bardzo dobry kurs polecam!");
         lista.add(review);
 
         review = new Review();
-        review.setComment("Mierny");
+        review.setComment("Taki sobie");
         lista.add(review);
 
         review = new Review();
-        review.setComment("Taki o");
+        review.setComment("Merytoryczny");
         lista.add(review);
 
         Course course = new Course();
-        course.setTitle("Mały książe");
+        course.setTitle("Programowanie w .NET");
         course.setReview(lista);
         courseRepository.save(course);
 
 
         List<Review> lista2 = new ArrayList<>();
         Review review2 = new Review();
-        review2.setComment("ujdzie");
+        review2.setComment("Widziałem lepsze");
         lista2.add(review2);
 
         review2 = new Review();
-        review2.setComment("w tłumie");
+        review2.setComment("Polecam!");
         lista2.add(review2);
 
         review2 = new Review();
-        review2.setComment("przejdzie");
+        review2.setComment("Wart swojej ceny!");
         lista2.add(review2);
 
         Course course2 = new Course();
-        course2.setTitle("Duży książe");
+        course2.setTitle("Programowanie w Javie");
         course2.setReview(lista2);
         courseRepository.save(course2);
         return new ResponseEntity<>(course, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/course/{id}")
+    public ResponseEntity deleteCourse(@PathVariable("id") long id){
+        courseRepository.deleteById(id);
+        return new ResponseEntity<>("OK", HttpStatus.OK);
     }
 
 

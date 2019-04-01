@@ -1,9 +1,7 @@
 package pl.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +9,8 @@ import java.util.List;
 @Getter
 @Setter
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class CourseModel {
 
     @JsonProperty("id")
@@ -29,4 +29,5 @@ public class CourseModel {
         }
         review.add(new ReviewModel(comment));
     }
+
 }

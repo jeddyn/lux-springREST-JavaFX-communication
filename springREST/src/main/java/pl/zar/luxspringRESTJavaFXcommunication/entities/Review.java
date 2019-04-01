@@ -6,13 +6,14 @@ import lombok.*;
 
 import javax.persistence.*;
 
-@Entity
-@Table(name = "review")
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@Entity
+@Table(name = "review")
 public class Review {
 
     @Id
@@ -24,7 +25,7 @@ public class Review {
 
 
     @Column(name = "comment")
-    //@JsonProperty("comment")
+    @JsonProperty("comment")
     private String comment;
 
 }

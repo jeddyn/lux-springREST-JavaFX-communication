@@ -10,30 +10,34 @@ import javax.persistence.*;
 import java.util.List;
 
 
-@Entity
-@Table(name="course")
+
 @Getter
 @Setter
 @ToString
+@Entity
+@Table(name="course")
 public class Course {
 	
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	@Column(name="id")
+	@JsonProperty("id")
 	private Long id;
-	
+
 	@Column(name="title")
+	@JsonProperty("title")
 	private String title;
 
 	@OneToMany(fetch = FetchType.LAZY,
 			   cascade = CascadeType.PERSIST)
 	@JoinColumn(name = "course_id")
 	//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+	@JsonProperty("review")
 	private List<Review> review;
 	
 	public Course() {}
 
-	public void setReview(Review review){
+	public void setReview2(Review review){
 		this.review.add(review);
 	}
 	//@JsonProperty("review")
