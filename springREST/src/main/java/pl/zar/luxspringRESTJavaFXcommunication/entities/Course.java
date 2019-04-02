@@ -2,9 +2,7 @@ package pl.zar.luxspringRESTJavaFXcommunication.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.List;
@@ -13,6 +11,8 @@ import java.util.List;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @ToString
 @Entity
 @Table(name="course")
@@ -29,19 +29,9 @@ public class Course {
 	private String title;
 
 	@OneToMany(fetch = FetchType.LAZY,
-			   cascade = CascadeType.PERSIST)
+			   cascade = CascadeType.ALL)
 	@JoinColumn(name = "course_id")
-	//@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 	@JsonProperty("review")
 	private List<Review> review;
-	
-	public Course() {}
 
-	public void setReview2(Review review){
-		this.review.add(review);
-	}
-	//@JsonProperty("review")
-	public void setReview(List<Review> review){
-		this.review = review;
-	}
 }

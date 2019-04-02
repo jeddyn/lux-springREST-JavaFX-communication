@@ -1,25 +1,18 @@
-package pl.model;
+package pl.zar.luxspringRESTJavaFXcommunication.DTO;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
-@Setter
 @Getter
+@Setter
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReviewModel {
-
+public class ReviewDTO {
 
     @JsonProperty("id")
     private Long id;
 
     @JsonProperty("comment")
     private String comment;
-
-    public ReviewModel(String comment) {
-        this.comment = comment;
-    }
-
-
 }

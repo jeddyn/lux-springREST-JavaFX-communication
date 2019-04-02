@@ -5,82 +5,53 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.zar.luxspringRESTJavaFXcommunication.DTO.CourseDTO;
 import pl.zar.luxspringRESTJavaFXcommunication.entities.Course;
-import pl.zar.luxspringRESTJavaFXcommunication.entities.Review;
-import pl.zar.luxspringRESTJavaFXcommunication.repository.CourseRepository;
+import pl.zar.luxspringRESTJavaFXcommunication.service.CourseService;
 
-import java.util.ArrayList;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("/test")
+@RequestMapping("/api")
 public class CourseController {
+
     @Autowired
-    CourseRepository courseRepository;
+    private CourseService courseService;
 
 
     @GetMapping("/course")
-    public ResponseEntity<List<Course>> getCourses(){
-        List<Course> allCourses = courseRepository.findAll();
-        //List <OutDto> responseList = new ArrayList<>();
-//        for (Course item : allCourses){
-//            responseList.add(new OutDto(item.getId(),item.getTitle(), item.getReview().getComment()));
-//        }
-        return new ResponseEntity<>(allCourses, HttpStatus.OK);
+    public ResponseEntity<List<Course>> getCourses() {
+        return new ResponseEntity<>(courseService.getAllCourses(), HttpStatus.OK);
     }
 
     @PostMapping("/course")
-    public ResponseEntity addCourse(@RequestBody Course course) {
-
-        courseRepository.save(course);
-        return new ResponseEntity(HttpStatus.OK);
-    }
-    @GetMapping("/addAllCoursesWithReviews")
-    public ResponseEntity addAllReviews() {
-        List<Review> lista = new ArrayList<>();
-        Review review = new Review();
-        review.setComment("Bardzo dobry kurs polecam!");
-        lista.add(review);
-
-        review = new Review();
-        review.setComment("Taki sobie");
-        lista.add(review);
-
-        review = new Review();
-        review.setComment("Merytoryczny");
-        lista.add(review);
-
-        Course course = new Course();
-        course.setTitle("Programowanie w .NET");
-        course.setReview(lista);
-        courseRepository.save(course);
-
-
-        List<Review> lista2 = new ArrayList<>();
-        Review review2 = new Review();
-        review2.setComment("Widziałem lepsze");
-        lista2.add(review2);
-
-        review2 = new Review();
-        review2.setComment("Polecam!");
-        lista2.add(review2);
-
-        review2 = new Review();
-        review2.setComment("Wart swojej ceny!");
-        lista2.add(review2);
-
-        Course course2 = new Course();
-        course2.setTitle("Programowanie w Javie");
-        course2.setReview(lista2);
-        courseRepository.save(course2);
+    public ResponseEntity addCourse(@Valid @RequestBody CourseDTO courseDTO, HttpServletRequest httpServletRequest) {
+        log.info("USER: ", httpServletRequest.getRemoteUser());
+        Course course = courseService.addCourse(courseDTO);
         return new ResponseEntity<>(course, HttpStatus.OK);
     }
 
+
     @DeleteMapping("/course/{id}")
-    public ResponseEntity deleteCourse(@PathVariable("id") long id){
-        courseRepository.deleteById(id);
-        return new ResponseEntity<>("OK", HttpStatus.OK);
+    public ResponseEntity deleteCourse(@PathVariable("id") long id) {
+        courseService.deleteCourse(id);
+        return new ResponseEntity<>("Deleted", HttpStatus.OK);
+    }
+
+    @PutMapping("/course")
+    public ResponseEntity updateCourse(@Valid @RequestBody CourseDTO courseDTO) {
+        log.info("DTO {}", courseDTO.toString());
+        Course course = courseService.updateCourse(courseDTO);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @GetMapping("/course/{id}")
+    public ResponseEntity getById(@PathVariable("id") long id) {
+        Course course = courseService.getSingleCourse(id);
+        return new ResponseEntity<>(course, HttpStatus.OK);
     }
 
 

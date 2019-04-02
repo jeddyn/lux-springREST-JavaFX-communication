@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import org.json.simple.JSONObject;
 import pl.model.CourseModel;
 
 import java.io.BufferedReader;
@@ -13,9 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -23,7 +19,7 @@ public class JSonService {
 
     //need refactor to List<T> t
     public static List<CourseModel> getListOfModels() throws IOException {
-        URL url = new URL("http://localhost:5050/test/course");//your url i.e fetch data from .
+        URL url = new URL("http://localhost:5050/api/course");//your url i.e fetch data from .
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");
@@ -45,16 +41,17 @@ public class JSonService {
         mapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 
         output = br.readLine();
-        List<CourseModel> listOfCurseModel = mapper.readValue(output, new TypeReference<List<CourseModel>>(){});
+        List<CourseModel> listOfCurseModel = mapper.readValue(output, new TypeReference<List<CourseModel>>() {
+        });
         conn.disconnect();
         return listOfCurseModel;
     }
 
-    public static HttpURLConnection postGetDeleteHttpREST(Long id,String urlConn, String methodRequest, CourseModel courseModel) throws IOException {
-        URL url = null;
-        if(id != null){
-            url = new URL(urlConn+"/"+id);
-        }else{
+    public static HttpURLConnection postGetDeleteHttpREST(Long id, String urlConn, String methodRequest, CourseModel courseModel) throws IOException {
+        URL url;
+        if (id != null) {
+            url = new URL(urlConn + "/" + id);
+        } else {
             url = new URL(urlConn);
         }
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -62,9 +59,9 @@ public class JSonService {
         conn.setRequestProperty("Accept", "application/json");
         String userCredentials = "user:password";
         String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
-        conn.setRequestProperty("Authorization", basicAuth); //Authorization / Content type
+        conn.setRequestProperty("Authorization", basicAuth);
 
-        if(methodRequest.equals("POST")){
+        if (methodRequest.equals("POST")) {
             BufferedReader br = new BufferedReader(new InputStreamReader(
                     (conn.getInputStream())));
 
@@ -107,4 +104,32 @@ public class JSonService {
         conn.setRequestProperty("Content-Type", "application/json");
         return conn;
     }
+
+
+    public static void putObject(CourseModel courseModel) throws IOException {
+
+        URL url = new URL("http://localhost:5050/api/course");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        String userCredentials = "user:password";
+        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
+        conn.setRequestProperty("Authorization", basicAuth);
+        conn.setDoOutput(true);
+        conn.setRequestMethod("PUT");
+        conn.setRequestProperty("Content-Type", "application/json");
+        Gson gson = new Gson();
+        String input = gson.toJson(courseModel);
+        System.out.println("GSON: " + input);
+        OutputStream os = conn.getOutputStream();
+        os.write(input.getBytes());
+        os.flush();
+
+        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + conn.getResponseCode());
+        }
+
+        conn.disconnect();
+    }
+
+
 }

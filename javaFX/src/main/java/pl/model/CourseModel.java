@@ -22,9 +22,8 @@ public class CourseModel {
     @JsonProperty("review")
     private List<ReviewModel> review;
 
-    //@JsonProperty("comment")
-    public void setComment(String comment){
-        if(this.review == null){
+    public void setComment(String comment) {
+        if (this.review == null) {
             review = new ArrayList<>();
         }
         review.add(new ReviewModel(comment));

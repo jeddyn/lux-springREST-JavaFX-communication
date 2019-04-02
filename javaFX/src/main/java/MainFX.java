@@ -3,6 +3,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -27,24 +28,24 @@ import java.net.HttpURLConnection;
 
 
 public class MainFX extends Application {
+    Service<Void> backgroundThread;
+
+
     private TableView<CourseModel> tableOfCourses;
     private TableView<ReviewModel> tableOfReviews;
 
-    private ObservableList<CourseModel> dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+    private ObservableList<CourseModel> dataOfCourses;
 
+    //print action in bottom
     private Text actionStatus;
     //input to add Title
     private TextField inputTitle = new TextField();
     //input to add Review
     private TextField inputReview = new TextField();
-
+    //search in DB textField
     private TextField searchField = new TextField();
 
     private Number actuallySelectedItemsInColumnOfReviews = 0;
-
-
-    public MainFX() throws IOException {
-    }
 
 
     @Override
@@ -57,7 +58,7 @@ public class MainFX extends Application {
         topLabel.setFont(Font.font("Calibri", FontWeight.BOLD, 36));
         HBox labelHb = new HBox();
         labelHb.setAlignment(Pos.CENTER);
-        labelHb.getChildren().addAll(searchField,topLabel);
+        labelHb.getChildren().addAll(searchField, topLabel);
 
 
         // tworzenie nowego widoku, pobieranie danych z bazy, wrzucanie danych do tabelki, edit true
@@ -65,8 +66,6 @@ public class MainFX extends Application {
         dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
         tableOfCourses.setItems(dataOfCourses);
         tableOfCourses.setEditable(true);
-
-
 
 
         TableColumn titleCol = new TableColumn("Tytuł kursu");
@@ -79,6 +78,15 @@ public class MainFX extends Application {
                 ((CourseModel) t.getTableView().getItems().get(
                         t.getTablePosition().getRow())
                 ).setTitle(t.getNewValue());
+
+                CourseModel editedCourse = t.getTableView().getItems().get(
+                        t.getTablePosition().getRow());
+                try {
+                    JSonService.putObject(editedCourse);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
 
         });
@@ -136,7 +144,7 @@ public class MainFX extends Application {
         // Vbox
         VBox vbox = new VBox(20);
         vbox.setPadding(new Insets(25, 25, 25, 25));
-        vbox.getChildren().addAll(searchTxfield,searchField,labelHb, tableOfCourses, buttonHb, actionStatus, tableOfReviews);
+        vbox.getChildren().addAll(searchTxfield, searchField, labelHb, tableOfCourses, buttonHb, actionStatus, tableOfReviews);
 
         // Scene
         Scene scene = new Scene(vbox, 1280, 800); // w x h
@@ -151,6 +159,7 @@ public class MainFX extends Application {
         actionStatus.setText(courseModel.toString());
 
 
+        // TODO: 2019-04-02 dynamic database search
         searchField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     System.out.println(newValue);
@@ -171,10 +180,12 @@ public class MainFX extends Application {
 
             if ((ix < 0) || (ix >= dataOfCourses.size())) {
 
-                return; // invalid dataOfCourses
+                return;
             }
             //print reviews from selected item
-            tableOfReviews.setItems(FXCollections.observableArrayList(dataOfCourses.get((int)actuallySelectedItemsInColumnOfReviews).getReview()));
+            tableOfReviews
+                    .setItems(FXCollections.observableArrayList(
+                            dataOfCourses.get((int) actuallySelectedItemsInColumnOfReviews).getReview()));
             CourseModel courseModel = dataOfCourses.get(ix);
             actionStatus.setText(courseModel.toString());
         }
@@ -184,12 +195,13 @@ public class MainFX extends Application {
 
         @Override
         public void handle(ActionEvent e) {
+
             HttpURLConnection conn;
             try {
                 conn = JSonService
-                                .httpConnectToREST("http://localhost:5050/test/course",
-                                                "POST",
-                                              "Authorization");
+                        .httpConnectToREST("http://localhost:5050/api/course",
+                                "POST",
+                                "Authorization");
 
                 boolean isContainActuallyAddedCourse = false;
 
@@ -198,36 +210,38 @@ public class MainFX extends Application {
                 courseModel.setTitle(inputTitle.getText());
                 courseModel.setComment(inputReview.getText());
 
+
                 //if in database we have this course update reviews
-                for(int i =0; i<dataOfCourses.size(); i++){
-                    if(dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())){
-                        dataOfCourses.get(i).setComment(inputReview.getText());
+                for (int i = 0; i < dataOfCourses.size(); i++) {
+                    if (dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())) {
+                        dataOfCourses.get(i).setComment(courseModel.getReview().get(0).getComment());
+                        JSonService.putObject(dataOfCourses.get(i));
                         isContainActuallyAddedCourse = true;
+                        break;
                     }
                 }
 
                 //if we dont have this user
-                if(isContainActuallyAddedCourse == false) {
-                        //add courseModel to database by REST URL
-                        //JSonService.postGetDeleteHttpREST(null,"http://localhost:5050/test/course","POST",courseModel);
-                        JSonService.addParsedJsonObject(courseModel,conn);
-                        //delete all data (to update id's)
-                        dataOfCourses = null;
-                        //set data from REST server
-                        dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
-                        tableOfCourses.setItems(dataOfCourses);
-
+                if (!isContainActuallyAddedCourse) {
+                    //add courseModel to database by REST URL
+                    //JSonService.postGetDeleteHttpREST(null,"http://localhost:5050/api/course","POST",courseModel);
+                    JSonService.addParsedJsonObject(courseModel, conn);
                 }
+                dataOfCourses = null;
+                //set data from REST server
+                dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+                tableOfCourses.setItems(dataOfCourses);
+                //tableOfReviews.refresh();
 
                 // Select the new row
-                int row = dataOfCourses.size()-1;
+                int row = dataOfCourses.size() - 1;
                 tableOfCourses.requestFocus();
                 tableOfCourses.getSelectionModel().select(row);
                 tableOfCourses.getFocusModel().focus(row);
                 tableOfCourses.refresh();
                 actionStatus.setText("Nowy kurs: Dodaj tytuł kursu i opinie. Zatwierdź przyciskiem <Dodaj>.");
 
-            }catch (IOException e1) {
+            } catch (IOException e1) {
                 e1.printStackTrace();
             }
             dataOfCourses = null;
@@ -245,7 +259,7 @@ public class MainFX extends Application {
         @Override
         public void handle(ActionEvent e) {
             int ix = tableOfCourses.getSelectionModel().getSelectedIndex();
-            CourseModel courseModel = (CourseModel) tableOfCourses.getSelectionModel().getSelectedItem();
+            CourseModel courseModel = tableOfCourses.getSelectionModel().getSelectedItem();
             System.out.println("Pobrano z tabelki użytkownika: " + courseModel.toString());
 
             // Get selected row and delete
@@ -254,18 +268,15 @@ public class MainFX extends Application {
                 try {
                     JSonService.postGetDeleteHttpREST(
                             courseModel.getId(),
-                            "http://localhost:5050/test/course",
+                            "http://localhost:5050/api/course",
                             "DELETE",
                             null);
-
-                    //JSonService.delete(courseModel.getId());
                     dataOfCourses.remove(ix);
 
                     dataOfCourses.addAll(JSonService.getListOfModels());
                     tableOfCourses.setItems(FXCollections.observableArrayList(FXCollections.observableArrayList(JSonService.getListOfModels())));
                     tableOfCourses.refresh();
-                    tableOfCourses.getColumns().get(0).setVisible(false);
-                    tableOfCourses.getColumns().get(0).setVisible(true);
+
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -278,7 +289,7 @@ public class MainFX extends Application {
 
                 if (ix != 0) {
 
-                    ix = ix-1;
+                    ix = ix - 1;
                 }
 
                 tableOfCourses.requestFocus();
