@@ -1,9 +1,13 @@
 import javafx.application.Application;
+import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
+import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
@@ -21,15 +25,16 @@ import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import pl.model.CourseModel;
 import pl.model.ReviewModel;
-import service.JSonService;
+import pl.service.JSonService;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.List;
 
 
 public class MainFX extends Application {
-    Service<Void> backgroundThread;
 
+    private Service<Void> backgroundThread;
 
     private TableView<CourseModel> tableOfCourses;
     private TableView<ReviewModel> tableOfReviews;
@@ -45,13 +50,13 @@ public class MainFX extends Application {
     //search in DB textField
     private TextField searchField = new TextField();
 
-    private Number actuallySelectedItemsInColumnOfReviews = 0;
+
+
 
 
     @Override
     public void start(Stage primaryStage) throws Exception {
         primaryStage.setTitle("Projekt");
-
 
         Label topLabel = new Label("Kursy");
         topLabel.setTextFill(Color.DARKBLUE);
@@ -60,13 +65,14 @@ public class MainFX extends Application {
         labelHb.setAlignment(Pos.CENTER);
         labelHb.getChildren().addAll(searchField, topLabel);
 
-
-        // tworzenie nowego widoku, pobieranie danych z bazy, wrzucanie danych do tabelki, edit true
+        //create new view
         tableOfCourses = new TableView<>();
+        //get data from JSON
         dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+        //set items to table of courses
         tableOfCourses.setItems(dataOfCourses);
+        //set as editable
         tableOfCourses.setEditable(true);
-
 
         TableColumn titleCol = new TableColumn("Tytuł kursu");
         titleCol.setCellValueFactory(new PropertyValueFactory<CourseModel, String>("title"));
@@ -86,7 +92,6 @@ public class MainFX extends Application {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
 
         });
@@ -123,12 +128,11 @@ public class MainFX extends Application {
                 new RowSelectChangeListener());
 
 
+        final Text titleTxfield = new Text("Tytuł:");
+        final Text reviewTxfield = new Text("Opinia");
+        final Text searchTxfield = new Text("Szukaj: ");
+
         // Add and delete buttons
-        Text titleTxfield = new Text("Tytuł:");
-        Text reviewTxfield = new Text("Ocena");
-        Text searchTxfield = new Text("Szukaj: ");
-
-
         Button addbtn = new Button("Dodaj");
         addbtn.setOnAction(new AddButtonListener());
         Button delbtn = new Button("Usuń");
@@ -158,36 +162,38 @@ public class MainFX extends Application {
         CourseModel courseModel = tableOfCourses.getSelectionModel().getSelectedItem();
         actionStatus.setText(courseModel.toString());
 
-
         // TODO: 2019-04-02 dynamic database search
         searchField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
-                    System.out.println(newValue);
+                    addTextFilter(dataOfCourses,searchField,tableOfCourses);
                 }
         );
-
     }
-
     private class RowSelectChangeListener implements ChangeListener<Number> {
+
+        private Number actuallySelectedItemsInColumnOfReviews = 0;
 
         @Override
         public void changed(ObservableValue<? extends Number> ov,
                             Number oldVal, Number newVal) {
             actuallySelectedItemsInColumnOfReviews = ov.getValue();
-
+            System.out.println("pobiera z drugiej kolumny");
 
             int ix = newVal.intValue();
 
             if ((ix < 0) || (ix >= dataOfCourses.size())) {
+                System.out.println("Błędny indeks");
 
                 return;
             }
             //print reviews from selected item
+            System.out.println();
             tableOfReviews
                     .setItems(FXCollections.observableArrayList(
                             dataOfCourses.get((int) actuallySelectedItemsInColumnOfReviews).getReview()));
             CourseModel courseModel = dataOfCourses.get(ix);
             actionStatus.setText(courseModel.toString());
+
         }
     }
 
@@ -196,59 +202,66 @@ public class MainFX extends Application {
         @Override
         public void handle(ActionEvent e) {
 
+
             HttpURLConnection conn;
-            try {
-                conn = JSonService
-                        .httpConnectToREST("http://localhost:5050/api/course",
-                                "POST",
-                                "Authorization");
 
-                boolean isContainActuallyAddedCourse = false;
+            if (!inputTitle.getText().trim().equals("")) {
+                if (!inputReview.getText().trim().equals("")) {
 
-                //create new user and set args
-                CourseModel courseModel = new CourseModel();
-                courseModel.setTitle(inputTitle.getText());
-                courseModel.setComment(inputReview.getText());
+                    CourseModel courseModel = new CourseModel();
+                    courseModel.setTitle(inputTitle.getText().trim());
+                    courseModel.setComment(inputReview.getText().trim());
 
+                    try {
+                        conn = JSonService
+                                .httpConnectToREST("http://localhost:5050/api/course",
+                                        "POST",
+                                        "Authorization");
 
-                //if in database we have this course update reviews
-                for (int i = 0; i < dataOfCourses.size(); i++) {
-                    if (dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())) {
-                        dataOfCourses.get(i).setComment(courseModel.getReview().get(0).getComment());
-                        JSonService.putObject(dataOfCourses.get(i));
-                        isContainActuallyAddedCourse = true;
-                        break;
+                        boolean isContainActuallyAddedCourse = false;
+
+                        //if in database we have this course update reviews
+                        for (int i = 0; i < dataOfCourses.size(); i++) {
+                            if (dataOfCourses.get(i).getTitle().equals(courseModel.getTitle())) {
+                                dataOfCourses.get(i).setComment(courseModel.getReview().get(0).getComment());
+                                JSonService.putObject(dataOfCourses.get(i));
+                                isContainActuallyAddedCourse = true;
+                                break;
+                            }
+                        }
+
+                        //if we dont have this user
+                        if (!isContainActuallyAddedCourse) {
+                            //add courseModel to database by REST URL
+                            //JSonService.postGetDeleteHttpREST(null,"http://localhost:5050/api/course","POST",courseModel);
+                            JSonService.addParsedJsonObject(courseModel, conn);
+                        }
+                        //clear old data
+                        dataOfCourses = null;
+                        //set data from REST server
+                        dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+                        tableOfCourses.setItems(dataOfCourses);
+                        //tableOfReviews.refresh();
+
+                        // Select the new row
+                        int row = dataOfCourses.size() - 1;
+                        tableOfCourses.requestFocus();
+                        tableOfCourses.getSelectionModel().select(row);
+                        tableOfCourses.getFocusModel().focus(row);
+                        tableOfCourses.refresh();
+                        actionStatus.setText("Nowy kurs: Dodaj tytuł kursu i opinie. Zatwierdź przyciskiem <Dodaj>.");
+                        //clear data
+                        dataOfCourses = null;
+                        //add new data
+                        dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+                    } catch (IOException e1) {
+                        e1.printStackTrace();
                     }
+                } else {
+                    actionStatus.setText("Błędne dane! Opinia nie może być pusta!");
                 }
-
-                //if we dont have this user
-                if (!isContainActuallyAddedCourse) {
-                    //add courseModel to database by REST URL
-                    //JSonService.postGetDeleteHttpREST(null,"http://localhost:5050/api/course","POST",courseModel);
-                    JSonService.addParsedJsonObject(courseModel, conn);
-                }
-                dataOfCourses = null;
-                //set data from REST server
-                dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
-                tableOfCourses.setItems(dataOfCourses);
-                //tableOfReviews.refresh();
-
-                // Select the new row
-                int row = dataOfCourses.size() - 1;
-                tableOfCourses.requestFocus();
-                tableOfCourses.getSelectionModel().select(row);
-                tableOfCourses.getFocusModel().focus(row);
-                tableOfCourses.refresh();
-                actionStatus.setText("Nowy kurs: Dodaj tytuł kursu i opinie. Zatwierdź przyciskiem <Dodaj>.");
-
-            } catch (IOException e1) {
-                e1.printStackTrace();
-            }
-            dataOfCourses = null;
-            try {//check its could be single get from REST
-                dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
-            } catch (IOException e1) {
-                e1.printStackTrace();
+            } else {
+                actionStatus.setText("Błędne dane! Kurs nie może być pusty!");
             }
         }
 
@@ -297,5 +310,56 @@ public class MainFX extends Application {
                 tableOfCourses.getFocusModel().focus(ix);
             }
         }
+    }
+
+
+
+
+    private <T> void addTextFilter(ObservableList<T> allData,
+                                          TextField filterField, TableView<T> table) {
+
+
+        final List<TableColumn<T, ?>> columns = table.getColumns();
+
+        FilteredList<T> filteredData = new FilteredList<>(allData);
+        filteredData.predicateProperty().bind(Bindings.createObjectBinding(() -> {
+            String text = filterField.getText();
+
+            if (text == null || text.isEmpty()) {
+                return null;
+            }
+            final String filterText = text.toLowerCase();
+
+            return o -> {
+                for (TableColumn<T, ?> col : columns) {
+                    ObservableValue<?> observable = col.getCellObservableValue(o);
+                    if (observable != null) {
+                        Object value = observable.getValue();
+                        if (value != null && value.toString().toLowerCase().contains(filterText)) {
+                            backgroundThread = new Service<Void>() {
+                                @Override
+                                protected Task<Void> createTask() {
+                                    try {
+                                        dataOfCourses = FXCollections.observableArrayList(JSonService.getListOfModels());
+                                        tableOfCourses.refresh();
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                    }
+                                    return null;
+                                }
+                            };
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            };
+
+        }, filterField.textProperty()));
+
+
+        SortedList<T> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(table.comparatorProperty());
+        table.setItems(sortedData);
     }
 }

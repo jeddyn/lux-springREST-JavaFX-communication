@@ -41,4 +41,17 @@ public class CourseServiceTest {
         Assert.assertEquals(review.getComment(), course.getReview().get(0).getComment());
     }
 
+    @Test
+    public void shouldReturnNull() {
+        CourseDTO courseDTO = new CourseDTO();
+        ReviewDTO reviewDTO = new ReviewDTO();
+        List<ReviewDTO> a = new ArrayList<>();
+        a.add(new ReviewDTO(reviewDTO.getId(), reviewDTO.getComment()));
+        courseDTO.setReview(a);
+
+
+        Course course1 = courseService.addCourse(courseDTO);
+
+        Assert.assertEquals(new ArrayList<ReviewDTO>(), course1.getReview());
+    }
 }

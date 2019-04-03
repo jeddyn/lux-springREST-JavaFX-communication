@@ -23,13 +23,17 @@ public class CourseController {
 
 
     @GetMapping("/course")
-    public ResponseEntity<List<Course>> getCourses() {
-        return new ResponseEntity<>(courseService.getAllCourses(), HttpStatus.OK);
+    public ResponseEntity<List<Course>> getCourses(HttpServletRequest httpServletRequest) {
+        List<Course> listOfCourses = courseService.getAllCourses();
+        log.info("USER: ", httpServletRequest.getRemoteUser());
+        log.info("Pobranie kursów: {}" + listOfCourses.toString());
+        return new ResponseEntity<>(listOfCourses, HttpStatus.OK);
     }
 
     @PostMapping("/course")
     public ResponseEntity addCourse(@Valid @RequestBody CourseDTO courseDTO, HttpServletRequest httpServletRequest) {
         log.info("USER: ", httpServletRequest.getRemoteUser());
+        log.info("Dodanie kursu: " + courseDTO);
         Course course = courseService.addCourse(courseDTO);
         return new ResponseEntity<>(course, HttpStatus.OK);
     }
@@ -37,13 +41,14 @@ public class CourseController {
 
     @DeleteMapping("/course/{id}")
     public ResponseEntity deleteCourse(@PathVariable("id") long id) {
+        log.info("Usuwanięcie kursu o id: {}" + id);
         courseService.deleteCourse(id);
         return new ResponseEntity<>("Deleted", HttpStatus.OK);
     }
 
     @PutMapping("/course")
     public ResponseEntity updateCourse(@Valid @RequestBody CourseDTO courseDTO) {
-        log.info("DTO {}", courseDTO.toString());
+        log.info("Aktualizacja kurs {}", courseDTO.toString());
         Course course = courseService.updateCourse(courseDTO);
         return new ResponseEntity(HttpStatus.OK);
     }
@@ -51,6 +56,7 @@ public class CourseController {
     @GetMapping("/course/{id}")
     public ResponseEntity getById(@PathVariable("id") long id) {
         Course course = courseService.getSingleCourse(id);
+        log.info("Pobranie kurs o id: {}" + id);
         return new ResponseEntity<>(course, HttpStatus.OK);
     }
 

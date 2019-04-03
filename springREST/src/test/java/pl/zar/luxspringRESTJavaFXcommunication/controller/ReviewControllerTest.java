@@ -1,5 +1,6 @@
 package pl.zar.luxspringRESTJavaFXcommunication.controller;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -8,6 +9,8 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import pl.zar.luxspringRESTJavaFXcommunication.DTO.ReviewDTO;
+import pl.zar.luxspringRESTJavaFXcommunication.entities.Review;
 import pl.zar.luxspringRESTJavaFXcommunication.service.CourseService;
 import pl.zar.luxspringRESTJavaFXcommunication.service.ReviewService;
 
@@ -27,7 +30,7 @@ public class ReviewControllerTest {
     }
 
     @Test
-    public void shouldUpdateAndReturnDto() {
+    public void shouldUpdateAndReturnEntityReview() {
 
     }
 }
