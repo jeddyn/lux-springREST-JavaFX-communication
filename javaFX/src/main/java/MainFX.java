@@ -98,7 +98,7 @@ public class MainFX extends Application {
 
         tableOfReviews = new TableView<>();
 
-        //tableOfReviews.setEditable(true);
+        tableOfReviews.setEditable(true);
 
         TableColumn reviewColum = new TableColumn("Opinie");
         reviewColum.setCellValueFactory(new PropertyValueFactory<ReviewModel, String>("comment"));
@@ -162,7 +162,6 @@ public class MainFX extends Application {
         CourseModel courseModel = tableOfCourses.getSelectionModel().getSelectedItem();
         actionStatus.setText(courseModel.toString());
 
-        // TODO: 2019-04-02 dynamic database search
         searchField.textProperty().addListener(
                 (observable, oldValue, newValue) -> {
                     addTextFilter(dataOfCourses,searchField,tableOfCourses);
@@ -171,27 +170,21 @@ public class MainFX extends Application {
     }
     private class RowSelectChangeListener implements ChangeListener<Number> {
 
-        private Number actuallySelectedItemsInColumnOfReviews = 0;
-
         @Override
         public void changed(ObservableValue<? extends Number> ov,
                             Number oldVal, Number newVal) {
-            actuallySelectedItemsInColumnOfReviews = ov.getValue();
-            System.out.println("pobiera z drugiej kolumny");
 
-            int ix = newVal.intValue();
+            int actuallySelectedItemInColumnOfReviews = newVal.intValue();
 
-            if ((ix < 0) || (ix >= dataOfCourses.size())) {
-                System.out.println("Błędny indeks");
-
+            if ((actuallySelectedItemInColumnOfReviews < 0) || (actuallySelectedItemInColumnOfReviews >= dataOfCourses.size())) {
                 return;
             }
             //print reviews from selected item
             System.out.println();
             tableOfReviews
                     .setItems(FXCollections.observableArrayList(
-                            dataOfCourses.get((int) actuallySelectedItemsInColumnOfReviews).getReview()));
-            CourseModel courseModel = dataOfCourses.get(ix);
+                            dataOfCourses.get(actuallySelectedItemInColumnOfReviews).getReview()));
+            CourseModel courseModel = dataOfCourses.get(actuallySelectedItemInColumnOfReviews);
             actionStatus.setText(courseModel.toString());
 
         }
@@ -202,15 +195,13 @@ public class MainFX extends Application {
         @Override
         public void handle(ActionEvent e) {
 
-
-            HttpURLConnection conn;
-
             if (!inputTitle.getText().trim().equals("")) {
                 if (!inputReview.getText().trim().equals("")) {
 
                     CourseModel courseModel = new CourseModel();
                     courseModel.setTitle(inputTitle.getText().trim());
                     courseModel.setComment(inputReview.getText().trim());
+                    HttpURLConnection conn;
 
                     try {
                         conn = JSonService
@@ -311,8 +302,6 @@ public class MainFX extends Application {
             }
         }
     }
-
-
 
 
     private <T> void addTextFilter(ObservableList<T> allData,

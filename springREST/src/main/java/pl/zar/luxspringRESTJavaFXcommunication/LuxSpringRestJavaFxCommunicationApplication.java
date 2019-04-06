@@ -3,7 +3,7 @@ package pl.zar.luxspringRESTJavaFXcommunication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import pl.zar.luxspringRESTJavaFXcommunication.staticdataservis.StaticDataOfCourses;
+import pl.zar.luxspringRESTJavaFXcommunication.staticdataservice.StaticDataOfCourses;
 
 import javax.annotation.PostConstruct;
 

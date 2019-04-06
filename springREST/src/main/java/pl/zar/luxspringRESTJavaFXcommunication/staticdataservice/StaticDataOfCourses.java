@@ -1,4 +1,4 @@
-package pl.zar.luxspringRESTJavaFXcommunication.staticdataservis;
+package pl.zar.luxspringRESTJavaFXcommunication.staticdataservice;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
