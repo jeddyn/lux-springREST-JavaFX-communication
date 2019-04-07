@@ -1,17 +1,15 @@
-package pl.fxmlmigration;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
+import pl.controller.SampleController;
 
-public class FXMLMain extends Application {
+public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader();
-        loader.setLocation(FXMLMain.class.getClassLoader().getResource("Sample.fxml"));
+        loader.setLocation(Main.class.getClassLoader().getResource("Sample.fxml"));
         //StackPane stackPane = loader.load();
         SampleController controller = loader.getController(); //new SampleController();
         //loader.setController(controller);

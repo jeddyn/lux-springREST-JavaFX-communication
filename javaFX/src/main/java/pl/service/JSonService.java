@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import pl.model.CourseModel;
+import pl.model.ReviewModel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -119,6 +120,32 @@ public class JSonService {
         Gson gson = new Gson();
         String input = gson.toJson(courseModel);
         System.out.println("GSON: " + input);
+        OutputStream os = conn.getOutputStream();
+        os.write(input.getBytes());
+        os.flush();
+
+        if (conn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            throw new RuntimeException("Failed : HTTP error code : "
+                    + conn.getResponseCode());
+        }
+
+        conn.disconnect();
+    }
+
+
+
+    public static void putObjectOfReview(ReviewModel reviewModel) throws IOException {
+
+        URL url = new URL("http://localhost:5050/api/review");
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        String userCredentials = "user:password";
+        String basicAuth = "Basic " + new String(Base64.getEncoder().encode(userCredentials.getBytes()));
+        conn.setRequestProperty("Authorization", basicAuth);
+        conn.setDoOutput(true);
+        conn.setRequestMethod("PUT");
+        conn.setRequestProperty("Content-Type", "application/json");
+        Gson gson = new Gson();
+        String input = gson.toJson(reviewModel);
         OutputStream os = conn.getOutputStream();
         os.write(input.getBytes());
         os.flush();

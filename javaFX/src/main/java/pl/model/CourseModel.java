@@ -11,6 +11,7 @@ import java.util.List;
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode
 public class CourseModel {
 
     @JsonProperty("id")
