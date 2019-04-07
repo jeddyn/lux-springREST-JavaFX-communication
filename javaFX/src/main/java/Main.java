@@ -10,9 +10,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader();
         loader.setLocation(Main.class.getClassLoader().getResource("Sample.fxml"));
-        //StackPane stackPane = loader.load();
-        SampleController controller = loader.getController(); //new SampleController();
-        //loader.setController(controller);
+        SampleController controller = loader.getController(); 
 
         Parent root = loader.load();
         Scene scene = new Scene(root);
